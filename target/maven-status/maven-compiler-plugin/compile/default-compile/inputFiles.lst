@@ -1,0 +1,10 @@
+C:\Users\Admin\Desktop\backend\src\main\java\com\todoApp\backend\BackendApplication.java
+C:\Users\Admin\Desktop\backend\src\main\java\com\todoApp\backend\config\CorsConfig.java
+C:\Users\Admin\Desktop\backend\src\main\java\com\todoApp\backend\config\Mapper.java
+C:\Users\Admin\Desktop\backend\src\main\java\com\todoApp\backend\controller\TaskController.java
+C:\Users\Admin\Desktop\backend\src\main\java\com\todoApp\backend\dto\AddTaskDto.java
+C:\Users\Admin\Desktop\backend\src\main\java\com\todoApp\backend\dto\TaskDto.java
+C:\Users\Admin\Desktop\backend\src\main\java\com\todoApp\backend\entity\Tasks.java
+C:\Users\Admin\Desktop\backend\src\main\java\com\todoApp\backend\repository\TaskRepository.java
+C:\Users\Admin\Desktop\backend\src\main\java\com\todoApp\backend\service\impl\TaskServiceImpl.java
+C:\Users\Admin\Desktop\backend\src\main\java\com\todoApp\backend\service\TaskService.java

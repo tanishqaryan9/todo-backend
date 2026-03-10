@@ -1,0 +1,10 @@
+com\todoApp\backend\dto\AddTaskDto.class
+com\todoApp\backend\controller\TaskController.class
+com\todoApp\backend\dto\TaskDto.class
+com\todoApp\backend\config\CorsConfig.class
+com\todoApp\backend\config\Mapper.class
+com\todoApp\backend\entity\Tasks.class
+com\todoApp\backend\repository\TaskRepository.class
+com\todoApp\backend\service\impl\TaskServiceImpl.class
+com\todoApp\backend\BackendApplication.class
+com\todoApp\backend\service\TaskService.class
