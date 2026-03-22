@@ -5,6 +5,9 @@ import com.todoApp.backend.dto.TaskDto;
 import com.todoApp.backend.entity.Tasks;
 import com.todoApp.backend.repository.TaskRepository;
 import com.todoApp.backend.service.TaskService;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
@@ -20,113 +23,120 @@ public class TaskServiceImpl implements TaskService {
     public final TaskRepository taskRepository;
     public final ModelMapper modelMapper;
 
-    @Override
-    public List<TaskDto> getAllTasks() {
-        List<Tasks> tasks=taskRepository.findAll();
-        return tasks.stream().map(task -> modelMapper.map(task, TaskDto.class)).toList();
+    @PersistenceContext
+    private EntityManager entityManager;
+
+    @Transactional
+    private void setSchema(String schema) {
+        if (schema != null) {
+            entityManager.createNativeQuery("SET search_path TO " + schema + ", public")
+                    .executeUpdate();
+        }
     }
 
     @Override
-    public List<TaskDto> getTasksByDueDate() {
-        List<Tasks> tasks=taskRepository.findAllByOrderByDueDateAsc();
-        return tasks.stream().map(task -> modelMapper.map(task,TaskDto.class)).toList();
+    @Transactional
+    public List<TaskDto> getAllTasks(String schema) {
+        setSchema(schema);
+        return taskRepository.findAll()
+                .stream().map(task -> modelMapper.map(task, TaskDto.class)).toList();
     }
 
     @Override
-    public TaskDto addTask(AddTaskDto addTaskDto) {
-        if(addTaskDto.getTask() == null || addTaskDto.getTask().isEmpty()) {
+    @Transactional
+    public List<TaskDto> getTasksByDueDate(String schema) {
+        setSchema(schema);
+        return taskRepository.findAllByOrderByDueDateAsc()
+                .stream().map(task -> modelMapper.map(task, TaskDto.class)).toList();
+    }
+
+    @Override
+    @Transactional
+    public TaskDto addTask(AddTaskDto addTaskDto, String schema) {
+        if (addTaskDto.getTask() == null || addTaskDto.getTask().isEmpty())
             throw new IllegalArgumentException("Task name cannot be empty");
-        }
-        if(addTaskDto.getDueDate() != null && addTaskDto.getDueDate().isBefore(LocalDate.now())) {
+        if (addTaskDto.getDueDate() != null && addTaskDto.getDueDate().isBefore(LocalDate.now()))
             throw new IllegalArgumentException("Due date cannot be in the past");
-        }
-        if(addTaskDto.getDescription() != null && addTaskDto.getDescription().length() > 200) {
-            throw new IllegalArgumentException("Description too long. Max 500 characters allowed.");
-        }
-        Tasks tasks=modelMapper.map(addTaskDto,Tasks.class);
-        Tasks savedTasks=taskRepository.save(tasks);
-        return modelMapper.map(savedTasks,TaskDto.class);
+        if (addTaskDto.getDescription() != null && addTaskDto.getDescription().length() > 200)
+            throw new IllegalArgumentException("Description too long. Max 200 characters allowed.");
+        setSchema(schema);
+        Tasks tasks = modelMapper.map(addTaskDto, Tasks.class);
+        return modelMapper.map(taskRepository.save(tasks), TaskDto.class);
     }
 
     @Override
-    public void deleteTaskById(Long id) {
-        if(!taskRepository.existsById(id))
-        {
+    @Transactional
+    public void deleteTaskById(Long id, String schema) {
+        setSchema(schema);
+        if (!taskRepository.existsById(id))
             throw new IllegalArgumentException("Task not found");
-        }
         taskRepository.deleteById(id);
     }
 
     @Override
-    public void deleteTaskByTask(String task) {
-        if(!taskRepository.existsByTaskIgnoreCase(task))
-        {
+    @Transactional
+    public void deleteTaskByTask(String task, String schema) {
+        setSchema(schema);
+        if (!taskRepository.existsByTaskIgnoreCase(task))
             throw new IllegalArgumentException("Task not found");
-        }
         taskRepository.deleteByTaskIgnoreCase(task);
     }
 
     @Override
-    public TaskDto updateTaskByTask(String task, AddTaskDto addTaskDto) {
-        if(addTaskDto.getTask() == null || addTaskDto.getTask().isEmpty()) {
+    @Transactional
+    public TaskDto updateTaskByTask(String task, AddTaskDto addTaskDto, String schema) {
+        if (addTaskDto.getTask() == null || addTaskDto.getTask().isEmpty())
             throw new IllegalArgumentException("Task name cannot be empty");
-        }
-        if(addTaskDto.getDueDate() != null && addTaskDto.getDueDate().isBefore(LocalDate.now())) {
+        if (addTaskDto.getDueDate() != null && addTaskDto.getDueDate().isBefore(LocalDate.now()))
             throw new IllegalArgumentException("Due date cannot be in the past");
-        }
-        if(addTaskDto.getDescription() != null && addTaskDto.getDescription().length() > 200) {
-            throw new IllegalArgumentException("Description too long. Max 500 characters allowed.");
-        }
-        Tasks tasks=taskRepository.findByTaskIgnoreCase(task).orElseThrow(()-> new IllegalArgumentException("Task not found"));
-        modelMapper.map(addTaskDto,tasks);
-        Tasks updatedTask=taskRepository.save(tasks);
-        return modelMapper.map(updatedTask,TaskDto.class);
+        if (addTaskDto.getDescription() != null && addTaskDto.getDescription().length() > 200)
+            throw new IllegalArgumentException("Description too long. Max 200 characters allowed.");
+        setSchema(schema);
+        Tasks tasks = taskRepository.findByTaskIgnoreCase(task)
+                .orElseThrow(() -> new IllegalArgumentException("Task not found"));
+        modelMapper.map(addTaskDto, tasks);
+        return modelMapper.map(taskRepository.save(tasks), TaskDto.class);
     }
 
     @Override
-    public TaskDto partialUpdateTaskByTask(String task, Map<String,Object> updates) {
-        Tasks tasks=taskRepository.findByTaskIgnoreCase(task).orElseThrow(()-> new IllegalArgumentException("Task not found"));
-        updates.forEach((key,value)-> {
-            switch (key)
-            {
-                case "task":
+    @Transactional
+    public TaskDto partialUpdateTaskByTask(String task, Map<String, Object> updates, String schema) {
+        setSchema(schema);
+        Tasks tasks = taskRepository.findByTaskIgnoreCase(task)
+                .orElseThrow(() -> new IllegalArgumentException("Task not found"));
+        updates.forEach((key, value) -> {
+            switch (key) {
+                case "task" -> {
                     String newTask = (String) value;
-                    if(newTask == null || newTask.isEmpty()) {
+                    if (newTask == null || newTask.isEmpty())
                         throw new IllegalArgumentException("Task name cannot be empty");
-                    }
                     tasks.setTask(newTask);
-                    break;
-                case "isCompleted": tasks.setIsCompleted((Boolean) value);
-                    break;
-                case "description":
+                }
+                case "isCompleted" -> tasks.setIsCompleted((Boolean) value);
+                case "description" -> {
                     String desc = (String) value;
-                    if(desc.length() > 500) throw new IllegalArgumentException("Description too long");
+                    if (desc.length() > 500) throw new IllegalArgumentException("Description too long");
                     tasks.setDescription(desc);
-                    break;
-                case "dueDate":
+                }
+                case "dueDate" -> {
                     LocalDate newDueDate = LocalDate.parse((String) value);
-                    if(newDueDate.isBefore(LocalDate.now())) {
+                    if (newDueDate.isBefore(LocalDate.now()))
                         throw new IllegalArgumentException("Due date cannot be in the past");
-                    }
                     tasks.setDueDate(newDueDate);
-                    break;
-                default:
-                    throw new IllegalArgumentException("Invalid Field");
+                }
+                default -> throw new IllegalArgumentException("Invalid Field");
             }
-        }
-        );
-        Tasks newtasks=taskRepository.save(tasks);
-        return modelMapper.map(newtasks,TaskDto.class);
+        });
+        return modelMapper.map(taskRepository.save(tasks), TaskDto.class);
     }
 
     @Override
-    public List<TaskDto> getByStatus(String status) {
-        List<Tasks> tasks;
-        if (status.equals("true")) {
-            tasks = taskRepository.findByIsCompletedTrue();
-        } else {
-            tasks = taskRepository.findByIsCompletedFalse();
-        }
+    @Transactional
+    public List<TaskDto> getByStatus(String status, String schema) {
+        setSchema(schema);
+        List<Tasks> tasks = status.equals("true")
+                ? taskRepository.findByIsCompletedTrue()
+                : taskRepository.findByIsCompletedFalse();
         return tasks.stream().map(task -> modelMapper.map(task, TaskDto.class)).toList();
     }
 }
